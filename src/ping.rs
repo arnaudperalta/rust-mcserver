@@ -1,8 +1,12 @@
 use std::io::{Read, Write, Result};
 use std::net::TcpStream;
-use mc_varint::{VarInt, VarIntWrite};
+use varint::VarintWrite;
 
-pub fn handle_server_list_ping(mut stream: TcpStream) -> Result<()> {
+pub fn handle_server_list_ping(stream: &mut TcpStream) -> Result<()> {
+    // Emptying the read buffer
+    let mut buffer = [0; 1024];
+    let _ = stream.read(&mut buffer)?;
+    // Sending server infos
     let payload = json::parse(r#"
         {
             "description": {
@@ -10,7 +14,7 @@ pub fn handle_server_list_ping(mut stream: TcpStream) -> Result<()> {
             },
             "players": {
                 "max": 10,
-                "online": 1337
+                "online": 100000
             },
             "version": {
                 "name": "1.18.2",
@@ -19,14 +23,12 @@ pub fn handle_server_list_ping(mut stream: TcpStream) -> Result<()> {
         }
     "#).unwrap().dump();
     // Yes add 3 because why not ?
-    stream.write_var_int(VarInt::from(payload.len() as i32 + 3))?;
+    stream.write_unsigned_varint_32((payload.len() + 3) as u32)?;
     stream.write(&mut [0x00])?;
-    stream.write_var_int(VarInt::from(payload.len() as i32))?;
-    // stream.write(&payload_length)?;
+    stream.write_unsigned_varint_32(payload.len() as u32)?;
     stream.write(&payload.as_bytes())?;
     stream.flush()?;
     // Wait for client ping
-    let mut buffer = [0; 1024];
     stream.read(&mut buffer)?;
     stream.write(&mut buffer)?;
     stream.flush()
