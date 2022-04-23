@@ -1,7 +1,8 @@
 use std::net::TcpStream;
-use std::io::{Read, Result};
+use std::io::{Read, Result, Write};
 use std::str::from_utf8;
-use varint::VarintRead;
+use uuid::Uuid;
+use varint::{VarintRead, VarintWrite};
 
 pub fn read_string(stream: &mut TcpStream) -> Result<String> {
     let mut buffer = vec![];
@@ -19,12 +20,4 @@ pub fn read_ushort(stream: &mut TcpStream) -> Result<u16> {
     let mut buffer = [0u8, 2];
     stream.read(&mut buffer)?;
     Ok(u16::from_be_bytes(buffer))
-}
-
-pub fn write_string(stream: &mut TcpStream, value: String) -> Result<()> {
-    Ok(())
-}
-
-pub fn write_varint(stream: &mut TcpStream, value: u32) -> Result<()> {
-    Ok(())
 }

@@ -1,6 +1,6 @@
-use std::io::{Read, Write, Result};
+use std::io::{Read, Result, Write};
 use std::net::TcpStream;
-use varint::VarintWrite;
+use crate::packet::Packet;
 
 pub fn handle_server_list_ping(stream: &mut TcpStream) -> Result<()> {
     // Emptying the read buffer
@@ -22,14 +22,16 @@ pub fn handle_server_list_ping(stream: &mut TcpStream) -> Result<()> {
             }
         }
     "#).unwrap().dump();
-    // Yes add 3 because why not ?
-    stream.write_unsigned_varint_32((payload.len() + 3) as u32)?;
-    stream.write(&mut [0x00])?;
-    stream.write_unsigned_varint_32(payload.len() as u32)?;
-    stream.write(&payload.as_bytes())?;
-    stream.flush()?;
-    // Wait for client ping
-    stream.read(&mut buffer)?;
-    stream.write(&mut buffer)?;
+
+    let mut packet = Packet {
+        packet_id: 0x00,
+        payload: Vec::new()
+    };
+    packet.write_string(String::from(payload))?;
+    packet.send(stream)?;
+
+    packet.payload = Vec::new();
+    stream.read(&mut buffer)?; // PING
+    stream.write(&mut buffer)?; // PONG
     stream.flush()
 }

@@ -5,6 +5,7 @@ mod packet_id;
 mod ping;
 mod login;
 mod protocol;
+mod packet;
 
 fn main() -> Result<()> {
     let listener = TcpListener::bind("127.0.0.1:25565").unwrap();
@@ -20,7 +21,9 @@ fn main() -> Result<()> {
 }
 
 fn handle_connection(stream: &mut TcpStream) -> Result<()> {
+    // Packet length
     let _ = protocol::read_varint(stream);
+    // Packet ID
     let packet_id = protocol::read_varint(stream).unwrap();
     println!("Packet ID: {}", packet_id);
     match packet_id {
@@ -43,7 +46,7 @@ fn initializing_connection(stream: &mut TcpStream) -> Result<()> {
     let next_state = protocol::read_varint(stream).unwrap();
     println!("Next State: {}", next_state);
     match next_state {
-        2 => login::client_login()?,
+        2 => login::client_login(stream)?,
         _ => ping::handle_server_list_ping(stream)?
     }
     Ok(())
